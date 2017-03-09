@@ -21,8 +21,6 @@ command:
 
     $ tox -e genconfig
 
-..
-
 Running this command will create a file named ``sahara.conf.sample``
 in the ``etc/sahara`` directory of the project.
 
@@ -34,7 +32,6 @@ database. For example, the connection string for a MySQL database will be:
 .. sourcecode:: cfg
 
     connection=mysql://username:password@host:port/database
-..
 
 Next you will configure the Identity service parameters in the
 ``[keystone_authtoken]`` section. The ``auth_uri`` parameter
@@ -45,11 +42,10 @@ should point to the admin Identity API endpoint. For example:
 
     auth_uri=http://127.0.0.1:5000/v2.0/
     identity_uri=http://127.0.0.1:35357/
-..
 
 Specify the ``admin_user``, ``admin_password`` and ``admin_tenant_name``.
 These parameters must specify an Identity user who has the ``admin`` role
-in the given tenant. These credentials allow sahara to authenticate and
+in the given project. These credentials allow sahara to authenticate and
 authorize its users.
 
 Next you will configure the default Networking service. If using
@@ -59,30 +55,24 @@ in the ``[DEFAULT]`` section:
 .. sourcecode:: cfg
 
     use_neutron=true
-..
 
 If you are using nova-network for networking then this parameter should
 be set to ``false``.
 
 With these parameters set, sahara is ready to run.
 
-If you wish to increase the logging levels for troubleshooting there
-are two parameters in the ``[DEFAULT]`` section of the configuration
-file which control the level of logging output; ``verbose`` and
-``debug``. With ``verbose`` set to ``true`` sahara's default logging
-level will be set to INFO, and with ``debug`` set to ``true`` it will
-be set to DEBUG. By default the sahara's log level is set to WARNING.
+By default the sahara's log level is set to INFO. If you wish to increase
+the logging levels for troubleshooting, set ``debug`` to ``true`` in the
+``[DEFAULT]`` section of the configuration file.
 
 .. _neutron-nova-network:
 
 Networking configuration
 ------------------------
 
-By default sahara is configured to use the nova-network implementation
-of OpenStack Networking. If an OpenStack cluster uses neutron,
-then the ``use_neutron`` parameter should be set to ``True`` in the
-sahara configuration file. Additionally, if the cluster supports network
-namespaces the ``use_namespaces`` property can be used to enable their usage.
+By default sahara is configured to use the neutron. Additionally, if the
+cluster supports network namespaces the ``use_namespaces`` property can
+be used to enable their usage.
 
 .. sourcecode:: cfg
 
@@ -95,13 +85,17 @@ namespaces the ``use_namespaces`` property can be used to enable their usage.
     instance and namespaces are used, some additional configuration is
     required, please see :ref:`non-root-users` for more information.
 
+If an OpenStack cluster uses the deprecated nova-network,
+then the ``use_neutron`` parameter should be set to ``False`` in the
+sahara configuration file.
+
 .. _floating_ip_management:
 
 Floating IP management
 ++++++++++++++++++++++
 
 During cluster setup sahara must access instances through a secure
-shell(SSH). To establish this connection it may use either the fixed
+shell (SSH). To establish this connection it may use either the fixed
 or floating IP address of an instance. By default sahara is configured
 to use floating IP addresses for access. This is controlled by the
 ``use_floating_ips`` configuration parameter. With this setup the user
@@ -146,7 +140,6 @@ of the configuration file:
 
     [oslo_messaging_notifications]
     enable = true
-..
 
 And the following parameter ``driver`` should be set in the
 ``[oslo_messaging_notifications]`` section of the configuration file:
@@ -155,7 +148,6 @@ And the following parameter ``driver`` should be set in the
 
     [oslo_messaging_notifications]
     driver = messaging
-..
 
 By default sahara is configured to use RabbitMQ as its message broker.
 
@@ -165,7 +157,6 @@ following parameter in the ``[DEFAULT]`` section:
 .. sourcecode:: cfg
 
     rpc_backend = rabbit
-..
 
 You may also need to specify the connection parameters for your
 RabbitMQ installation. The following example shows the default
@@ -189,28 +180,13 @@ Orchestration configuration
 
 By default sahara is configured to use the heat engine for instance
 creation. The heat engine uses the OpenStack Orchestration service to
-provision instances. Sahara can be configured to use the direct engine for
-this purpose, but after the Liberty release it will be removed. This
-engine makes calls directly to the services required for instance
-provisioning. We recommend using the OpenStack Orchestration service.
-
-To configure sahara to use the direct engine for instance
-provisioning the ``infrastructure_engine`` parameter should be modified in
-the configuration file as follows:
-
-.. sourcecode:: cfg
-
-    [DEFAULT]
-    infrastructure_engine=direct
-
-.. warning::
-    The direct engine will be removed after the Liberty release, we
-    recommend using the heat engine.
+provision instances. This engine makes calls directly to the services required
+for instance provisioning.
 
 .. _policy-configuration-label:
 
 Policy configuration
----------------------------
+--------------------
 
 Sahara’s public API calls may be restricted to certain sets of users by
 using a policy configuration file. The location of the policy file(s)

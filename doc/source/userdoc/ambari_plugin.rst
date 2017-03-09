@@ -32,7 +32,7 @@ You could download well tested and up-to-date prepared images from
 http://sahara-files.mirantis.com/images/upstream/
 
 HDP plugin requires an image to be tagged in sahara Image Registry with two
-tags: 'ambari' and '<plugin version>' (e.g. '2.3').
+tags: 'ambari' and '<plugin version>' (e.g. '2.5').
 
 Also in the Image Registry you will need to specify username for an image.
 The username specified should be 'cloud-user' in case of CentOS 6.x image,
@@ -55,7 +55,7 @@ ResourceManagers and at least 3 JournalNodes and at least 3 Zookeeper Servers.
 
 HDP Version Support
 -------------------
-The HDP plugin currently supports deployment of HDP 2.3.
+The HDP plugin currently supports deployment of HDP 2.3, 2.4 and 2.5.
 
 Cluster Validation
 ------------------
@@ -65,3 +65,33 @@ validation checks to ensure a successful Hadoop deployment:
 * Ensure the existence of Ambari Server process in the cluster;
 * Ensure the existence of a NameNode, Zookeeper, ResourceManagers processes
   HistoryServer and App TimeLine Server in the cluster
+
+Enabling Kerberos security for cluster
+--------------------------------------
+
+If you want to protect your clusters using MIT Kerberos security you have to
+complete a few steps below.
+
+* If you would like to create a cluster protected by Kerberos security you
+  just need to enable Kerberos by checkbox in the ``General Parameters``
+  section of the cluster configuration. If you prefer to use the OpenStack CLI
+  for cluster creation, you have to put the data below in the
+  ``cluster_configs`` section:
+
+  .. sourcecode:: console
+
+     "cluster_configs": {
+       "Enable Kerberos Security": true,
+     }
+
+  Sahara in this case will correctly prepare KDC server and will create
+  principals along with keytabs to enable authentication for Hadoop services.
+
+* Ensure that you have the latest hadoop-openstack jar file distributed
+  on your cluster nodes. You can download one at
+  ``http://tarballs.openstack.org/sahara/dist/``
+
+* Sahara will create principals along with keytabs for system users
+  like ``oozie``, ``hdfs`` and ``spark`` so that you will not have to
+  perform additional auth operations to execute your jobs on top of the
+  cluster.

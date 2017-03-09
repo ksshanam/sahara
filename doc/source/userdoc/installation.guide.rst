@@ -163,7 +163,7 @@ installations of sahara.
    ...
    [mysqld]
    ...
-   max_allowed_packet          = 256M
+   max_allowed_packet = 256M
 ..
 
     Then restart the mysql server to ensure these changes are active.
@@ -198,12 +198,14 @@ installations of sahara.
         "Sahara Data Processing" data-processing
 
     openstack endpoint create --region RegionOne \
-    --publicurl http://10.0.0.2:8386/v1.1/%\(tenant_id\)s \
-    --adminurl http://10.0.0.2:8386/v1.1/%\(tenant_id\)s \
-    --internalurl http://10.0.0.2:8386/v1.1/%\(tenant_id\)s \
+    --publicurl http://10.0.0.2:8386/v1.1/%\(project_id\)s \
+    --adminurl http://10.0.0.2:8386/v1.1/%\(project_id\)s \
+    --internalurl http://10.0.0.2:8386/v1.1/%\(project_id\)s \
     data-processing
+
 .. note::
-   You must have installed the openstack-client package.
+   You have to install the openstack-client package in order to execute
+   ``openstack`` command.
 ..
 
 5. For more information on configuring sahara with the OpenStack Dashboard
@@ -245,12 +247,12 @@ The above configuration values are included in a sample configuration
 file at ``<sahara_home>/plugins/default_templates/template.conf``
 
 The command to install all of the default templates is as follows, where
-``$TENANT_ID`` should be a valid tenant id and the above configuration values
+``$PROJECT_ID`` should be a valid project id and the above configuration values
 have been set in ``myconfig``:
 
 .. sourcecode:: console
 
-    $ sahara-templates --config-file /etc/sahara/sahara.conf --config-file myconfig update -t $TENANT_ID
+    $ sahara-templates --config-file /etc/sahara/sahara.conf --config-file myconfig update -t $PROJECT_ID
 
 Help is available from the ``sahara-templates`` command:
 
@@ -266,7 +268,6 @@ Ensure that your operating system is not blocking the sahara port
 (default: 8386). You may need to configure iptables in CentOS and
 other Linux distributions to allow this access.
 
-
 To get the list of all possible options run:
 
 .. sourcecode:: console
@@ -274,7 +275,6 @@ To get the list of all possible options run:
     $ sahara-venv/bin/python sahara-venv/bin/sahara-api --help
     $ sahara-venv/bin/python sahara-venv/bin/sahara-engine --help
 ..
-
 
 Further, consider reading :doc:`overview` for general sahara concepts and
 :doc:`plugins` for specific plugin features/requirements.

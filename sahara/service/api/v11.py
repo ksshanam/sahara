@@ -109,7 +109,7 @@ def execute_job(job_id, data):
 
     # Since we will use a unified class in the database, we pass
     # a superset for all job types
-    # example configs['start'] = '2015-05-12T08:55Z' frequency = 5 means
+    # example configs['start'] = '2015-05-12T08:55Z' frequency = 5 mins
     # the job will starts from 2015-05-12T08:55Z, runs every 5 mins
 
     job_execution_info = data.get('job_execution_info', {})
@@ -161,11 +161,11 @@ def cancel_job_execution(id):
 
 
 def update_job_execution(id, values):
-    _update_status(values.pop("info", None))
+    _update_status(values.pop("info", None), id)
     return conductor.job_execution_update(context.ctx(), id, values)
 
 
-def _update_status(info):
+def _update_status(info, id):
     if info:
         status = info.get("status", None)
         if status == edp.JOB_ACTION_SUSPEND:

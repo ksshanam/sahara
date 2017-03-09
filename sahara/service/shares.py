@@ -176,8 +176,8 @@ class _ShareHandler(object):
             access = accesses[0]
             if access.access_level not in ('ro', 'rw'):
                 LOG.warning(
-                    _LW("Unknown permission level %(access_level)s on share "
-                        "id %(share_id)s for ip %(ip)s. Leaving pre-existing "
+                    _LW("Unknown permission level {access_level} on share "
+                        "id {share_id} for ip {ip}. Leaving pre-existing "
                         "permissions.").format(
                             access_level=access.access_level,
                             share_id=self.share.id,
@@ -255,7 +255,7 @@ class _NFSMounter(_ShareHandler):
         remote.execute_command(mount_command, run_as_root=True)
 
     def unmount_from_instance(self, remote, share_info):
-        """Unounts the share from the instance."""
+        """Unmounts the share from the instance."""
         local_path = self._get_path(share_info)
 
         unmount_command = self._UNMOUNT_COMMAND % local_path

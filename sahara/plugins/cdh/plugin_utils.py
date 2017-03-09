@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # This file only contains utils not related to cm_api, while in
-# cloudera_utils the functios are cm_api involved.
+# cloudera_utils the functions are cm_api involved.
 
 import os
 import telnetlib  # nosec
@@ -115,6 +115,12 @@ class AbstractPluginUtils(object):
 
     def get_datanodes(self, cluster):
         return u.get_instances(cluster, 'HDFS_DATANODE')
+
+    def get_hdfs_nodes(self, cluster, instances=None):
+        instances = instances if instances else u.get_instances(cluster)
+        return u.instances_with_services(
+            instances, ["HDFS_DATANODE", "HDFS_NAMENODE",
+                        "HDFS_SECONDARYNAMENODE"])
 
     def get_secondarynamenode(self, cluster):
         return u.get_instance(cluster, 'HDFS_SECONDARYNAMENODE')
@@ -369,8 +375,8 @@ class AbstractPluginUtils(object):
             if config.applicable_target == service and config.name == name:
                 return types.transform_to_num(config.default_value)
         raise exc.InvalidDataException(
-            _("Unable to find config: {applicable_target: %(target)s, name: "
-              "%(name)s").format(target=service, name=name))
+            _("Unable to find config: applicable_target: {target}, name: "
+              "{name}").format(target=service, name=name))
 
     def recommend_configs(self, cluster, plugin_configs, scaling):
         provider = CDHPluginAutoConfigsProvider(

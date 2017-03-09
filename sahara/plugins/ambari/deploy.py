@@ -47,14 +47,19 @@ repo_id_map = {
     "2.4": {
         "HDP": "HDP-2.4",
         "HDP-UTILS": "HDP-UTILS-1.1.0.20"
-    }
+    },
+    "2.5": {
+        "HDP": "HDP-2.5",
+        "HDP-UTILS": "HDP-UTILS-1.1.0.20"
+    },
 }
 
 os_type_map = {
     "centos6": "redhat6",
     "redhat6": "redhat6",
     "centos7": "redhat7",
-    "redhat7": "redhat7"
+    "redhat7": "redhat7",
+    "ubuntu14": "ubuntu14"
 }
 
 
@@ -65,6 +70,7 @@ def setup_ambari(cluster):
     ambari = plugin_utils.get_instance(cluster, p_common.AMBARI_SERVER)
     with ambari.remote() as r:
         sudo = functools.partial(r.execute_command, run_as_root=True)
+        sudo("rngd -r /dev/urandom -W 4096")
         sudo("ambari-server setup -s -j"
              " `cut -f2 -d \"=\" /etc/profile.d/99-java.sh`", timeout=1800)
         redirect_file = "/tmp/%s" % uuidutils.generate_uuid()
@@ -95,12 +101,15 @@ def _setup_agents(instances, manager_address):
 def _disable_repos_on_inst(instance):
     with context.set_current_instance_id(instance_id=instance.instance_id):
         with instance.remote() as r:
-            tmp_name = "/tmp/yum.repos.d-%s" % instance.instance_id[:8]
             sudo = functools.partial(r.execute_command, run_as_root=True)
-            # moving to other folder
-            sudo("mv /etc/yum.repos.d/ {fold_name}".format(
-                fold_name=tmp_name))
-            sudo("mkdir /etc/yum.repos.d")
+            if r.get_os_distrib() == "ubuntu":
+                sudo("mv /etc/apt/sources.list /etc/apt/sources.list.tmp")
+            else:
+                tmp_name = "/tmp/yum.repos.d-%s" % instance.instance_id[:8]
+                # moving to other folder
+                sudo("mv /etc/yum.repos.d/ {fold_name}".format(
+                    fold_name=tmp_name))
+                sudo("mkdir /etc/yum.repos.d")
 
 
 def disable_repos(cluster):
@@ -120,9 +129,17 @@ def _setup_agent(instance, ambari_address):
         sudo = functools.partial(r.execute_command, run_as_root=True)
         r.replace_remote_string("/etc/ambari-agent/conf/ambari-agent.ini",
                                 "localhost", ambari_address)
-        sudo("service ambari-agent start")
+        try:
+            sudo("ambari-agent start")
+        except Exception as e:
+            # workaround for ubuntu, because on ubuntu the ambari agent
+            # starts automatically after image boot
+            msg = _("Restart of ambari-agent is needed for host {}, "
+                    "reason: {}").format(instance.fqdn(), e)
+            LOG.exception(msg)
+            sudo("ambari-agent restart")
         # for correct installing packages
-        sudo("yum clean all")
+        r.update_repository()
 
 
 @cpo.event_wrapper(True, step=_("Wait Ambari accessible"),
@@ -142,6 +159,20 @@ def _check_port_accessible(host, port):
         return False
 
 
+def resolve_package_conflicts(cluster, instances=None):
+    if not instances:
+        instances = plugin_utils.get_instances(cluster)
+    for instance in instances:
+        with instance.remote() as r:
+            if r.get_os_distrib() == 'ubuntu':
+                try:
+                    r.execute_command(
+                        "apt-get remove -y libmysql-java", run_as_root=True)
+                except Exception:
+                    LOG.warning(_LW("Can't remove libmysql-java, "
+                                    "it's probably not installed"))
+
+
 def _prepare_ranger(cluster):
     ranger = plugin_utils.get_instance(cluster, p_common.RANGER_ADMIN)
     if not ranger:
@@ -149,7 +180,6 @@ def _prepare_ranger(cluster):
     ambari = plugin_utils.get_instance(cluster, p_common.AMBARI_SERVER)
     with ambari.remote() as r:
         sudo = functools.partial(r.execute_command, run_as_root=True)
-        sudo("yum install -y mysql-connector-java")
         sudo("ambari-server setup --jdbc-db=mysql "
              "--jdbc-driver=/usr/share/java/mysql-connector-java.jar")
     init_db_template = (
@@ -243,7 +273,6 @@ def get_kdc_server(cluster):
         cluster, p_common.AMBARI_SERVER)
 
 
-@cpo.event_wrapper(True, step=_("Prepare Kerberos"), param=('cluster', 0))
 def _prepare_kerberos(cluster, instances=None):
     if instances is None:
         kerberos.deploy_infrastructure(cluster, get_kdc_server(cluster))
@@ -657,3 +686,21 @@ def add_hadoop_swift_jar(instances):
                               len(instances))
     for inst in instances:
         _add_hadoop_swift_jar(inst, new_jar)
+
+
+def deploy_kerberos_principals(cluster, instances=None):
+    if not kerberos.is_kerberos_security_enabled(cluster):
+        return
+    if instances is None:
+        instances = plugin_utils.get_instances(cluster)
+    mapper = {
+        'hdfs': plugin_utils.instances_with_services(
+            instances, [p_common.SECONDARY_NAMENODE, p_common.NAMENODE,
+                        p_common.DATANODE, p_common.JOURNAL_NODE]),
+        'spark': plugin_utils.instances_with_services(
+            instances, [p_common.SPARK_JOBHISTORYSERVER]),
+        'oozie': plugin_utils.instances_with_services(
+            instances, [p_common.OOZIE_SERVER]),
+    }
+
+    kerberos.create_keytabs_for_map(cluster, mapper)

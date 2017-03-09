@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
 
 import mock
+from oslo_utils import uuidutils
 import testtools
 
 from sahara import exceptions as exc
@@ -108,7 +108,7 @@ class FakeNodeGroup(object):
         self.floating_ip_pool = pool
         self.flavor_id = flavor_id
         self.open_ports = ports
-        self.id = uuid.uuid4()
+        self.id = uuidutils.generate_uuid()
 
 nova_limits = {
     'absolute': {
@@ -221,6 +221,7 @@ class TestQuotas(base.SaharaTestCase):
     @mock.patch('sahara.utils.openstack.nova.client',
                 return_value=FakeNovaClient(nova_limits))
     def test_get_nova_limits(self, nova):
+        self.override_config('use_neutron', False)
         self.assertEqual(
             {'cpu': 10, 'floatingips': 200,
              'instances': 3, 'ram': 9, 'security_group_rules': 'unlimited',
@@ -238,6 +239,7 @@ class TestQuotas(base.SaharaTestCase):
     @mock.patch('sahara.utils.openstack.neutron.client',
                 return_value=FakeNeutronClient(neutron_limits))
     def test_neutron_limits(self, neutron):
+        self.override_config('use_neutron', False)
         self.assertEqual({}, quotas._get_neutron_limits())
         self.override_config('use_neutron', True)
         self.assertEqual({'floatingips': 2340,
@@ -246,13 +248,15 @@ class TestQuotas(base.SaharaTestCase):
                           'security_groups': 1516},
                          quotas._get_neutron_limits())
 
+    @mock.patch("sahara.utils.openstack.cinder.check_cinder_exists",
+                return_value=True)
     @mock.patch('sahara.utils.openstack.nova.client',
                 return_value=FakeNovaClient(nova_limits))
     @mock.patch('sahara.utils.openstack.cinder.client',
                 return_value=FakeCinderClient(cinder_limits))
     @mock.patch('sahara.utils.openstack.neutron.client',
                 return_value=FakeNeutronClient(neutron_limits))
-    def test_limits_for_cluster(self, p1, p2, p3):
+    def test_limits_for_cluster(self, p1, p2, p3, p4):
         ng = [FakeNodeGroup(1, False, 0, 0, None, 'id1', [1, 2, 3])]
         quotas.check_cluster(FakeCluster(ng))
 

@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
 
-import six
+from oslo_utils import uuidutils
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 
@@ -26,7 +25,7 @@ from sahara.db.sqlalchemy import types as st
 # Helpers
 
 def _generate_unicode_uuid():
-    return six.text_type(uuid.uuid4())
+    return uuidutils.generate_uuid()
 
 
 def _id_column():
@@ -58,6 +57,7 @@ class Cluster(mb.SaharaBase):
     default_image_id = sa.Column(sa.String(36))
     neutron_management_network = sa.Column(sa.String(36))
     anti_affinity = sa.Column(st.JsonListType())
+    anti_affinity_ratio = sa.Column(sa.Integer, default=1)
     management_private_key = sa.Column(sa.Text, nullable=False)
     management_public_key = sa.Column(sa.Text, nullable=False)
     user_keypair_id = sa.Column(sa.String(80))

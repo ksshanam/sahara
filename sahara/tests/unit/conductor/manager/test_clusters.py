@@ -86,6 +86,11 @@ class ClusterTest(test_base.ConductorManagerTestCase):
         self.assertEqual(1, len(lst))
         cl_id = lst[0]["id"]
 
+        updated_cl = self.api.cluster_update(
+            ctx, cl_id, {"is_public": True})
+        self.assertIsInstance(updated_cl, dict)
+        self.assertEqual(True, updated_cl["is_public"])
+
         self.api.cluster_destroy(ctx, cl_id)
         lst = self.api.cluster_get_all(ctx)
         self.assertEqual(0, len(lst))
@@ -398,8 +403,9 @@ class ClusterTest(test_base.ConductorManagerTestCase):
         self.api.cluster_get_all(ctx, regex_search=True, name="fox")
         self.assertEqual(1, regex_filter.call_count)
         args, kwargs = regex_filter.call_args
-        self.assertTrue(type(args[1] is m.Cluster))
-        self.assertEqual(args[2], ["name", "description", "plugin_name"])
+        self.assertIs(args[1], m.Cluster)
+        self.assertEqual(args[2], ["name", "description", "plugin_name",
+                                   "tenant_id"])
         self.assertEqual(args[3], {"name": "fox"})
 
     @mock.patch("sahara.service.shares.mount_shares")

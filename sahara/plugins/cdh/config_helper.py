@@ -51,7 +51,9 @@ class ConfigHelper(object):
         '/apache/hadoop/hadoop-openstack/2.3.0-cdh5.0.0'
         '/hadoop-openstack-2.3.0-cdh5.0.0.jar')
 
-    DEFAULT_EXTJS_LIB_URL = 'http://sahara-files.mirantis.com/ext-2.2.zip'
+    DEFAULT_EXTJS_LIB_URL = (
+        'http://tarballs.openstack.org/sahara/dist/common-artifacts/'
+        'ext-2.2.zip')
 
     SWIFT_LIB_URL = p.Config(
         'Hadoop OpenStack library URL', 'general', 'cluster', priority=1,
@@ -69,7 +71,7 @@ class ConfigHelper(object):
         'Await Cloudera agents timeout', 'general', 'cluster',
         config_type='int', priority=1, default_value=300, is_optional=True,
         description="Timeout for Cloudera agents connecting to"
-                    " Coudera Manager, in seconds")
+                    " Cloudera Manager, in seconds")
 
     AWAIT_MANAGER_STARTING_TIMEOUT = p.Config(
         'Timeout for Cloudera Manager starting', 'general', 'cluster',

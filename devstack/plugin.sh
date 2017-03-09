@@ -32,16 +32,12 @@ function create_sahara_accounts {
 
     create_service_user "sahara"
 
-    if [[ "$KEYSTONE_CATALOG_BACKEND" = 'sql' ]]; then
-        get_or_create_service "sahara" \
-                                "data-processing" \
-                                "Sahara Data Processing"
-        get_or_create_endpoint "data-processing" \
-            "$REGION_NAME" \
-            "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s" \
-            "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s" \
-            "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s"
-    fi
+    get_or_create_service "sahara" "data-processing" "Sahara Data Processing"
+    get_or_create_endpoint "data-processing" \
+        "$REGION_NAME" \
+        "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s" \
+        "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s" \
+        "$SAHARA_SERVICE_PROTOCOL://$SAHARA_SERVICE_HOST:$SAHARA_SERVICE_PORT/v1.1/\$(tenant_id)s"
 }
 
 # cleanup_sahara() - Remove residual data files, anything left over from
@@ -81,7 +77,6 @@ function configure_sahara {
     # Set configuration to send notifications
 
     if is_service_enabled ceilometer; then
-        iniset $SAHARA_CONF_FILE oslo_messaging_notifications enable "true"
         iniset $SAHARA_CONF_FILE oslo_messaging_notifications driver "messaging"
     fi
 
@@ -157,7 +152,7 @@ function configure_sahara {
         # Enable distributed periodic tasks
         iniset $SAHARA_CONF_FILE DEFAULT periodic_coordinator_backend_url\
             $SAHARA_PERIODIC_COORDINATOR_URL
-        sudo pip install tooz[zookeeper]
+        pip_install tooz[zookeeper]
     fi
 
     recreate_database sahara
@@ -208,6 +203,14 @@ function start_sahara {
     fi
 }
 
+# configure_tempest_for_sahara() - Tune Tempest configuration for Sahara
+function configure_tempest_for_sahara {
+    if is_service_enabled tempest; then
+        iniset $TEMPEST_CONFIG service_available sahara True
+        iniset $TEMPEST_CONFIG data-processing-feature-enabled plugins $SAHARA_ENABLED_PLUGINS
+    fi
+}
+
 # stop_sahara() - Stop running processes
 function stop_sahara {
     # Kill the Sahara screen windows
@@ -242,6 +245,9 @@ if is_service_enabled sahara; then
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
         echo_summary "Initializing sahara"
         start_sahara
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        echo_summary "Configuring tempest"
+        configure_tempest_for_sahara
     fi
 
     if [[ "$1" == "unstack" ]]; then

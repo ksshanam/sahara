@@ -14,9 +14,9 @@
 # limitations under the License.
 
 import copy
-import uuid
 
 import mock
+from oslo_utils import uuidutils
 import six
 from sqlalchemy import exc as sa_ex
 import testtools
@@ -37,7 +37,7 @@ SAMPLE_NGT = {
     "plugin_name": "test_plugin",
     "hadoop_version": "test_version",
     "node_processes": ["p1", "p2"],
-    "image_id": str(uuid.uuid4()),
+    "image_id": uuidutils.generate_uuid(),
     "node_configs": {
         "service_1": {
             "config_1": "value_1"
@@ -67,7 +67,7 @@ SAMPLE_CLT = {
     "name": "clt_test",
     "plugin_name": "test_plugin",
     "hadoop_version": "test_version",
-    "default_image_id": str(uuid.uuid4()),
+    "default_image_id": uuidutils.generate_uuid(),
     "cluster_configs": {
         "service_1": {
             "config_1": "value_1"
@@ -103,7 +103,7 @@ SAMPLE_CLT = {
     ],
     "anti_affinity": ["datanode"],
     "description": "my template",
-    "neutron_management_network": str(uuid.uuid4()),
+    "neutron_management_network": uuidutils.generate_uuid(),
     "shares": None,
     "is_public": False,
     "is_protected": False
@@ -254,8 +254,9 @@ class NodeGroupTemplates(test_base.ConductorManagerTestCase):
                                              regex_search=True, name="fox")
         self.assertEqual(1, regex_filter.call_count)
         args, kwargs = regex_filter.call_args
-        self.assertTrue(type(args[1] is m.NodeGroupTemplate))
-        self.assertEqual(args[2], ["name", "description", "plugin_name"])
+        self.assertIs(args[1], m.NodeGroupTemplate)
+        self.assertEqual(args[2], ["name", "description", "plugin_name",
+                                   "tenant_id"])
         self.assertEqual(args[3], {"name": "fox"})
 
     def test_ngt_update(self):
@@ -563,8 +564,9 @@ class ClusterTemplates(test_base.ConductorManagerTestCase):
         self.api.cluster_template_get_all(ctx, regex_search=True, name="fox")
         self.assertEqual(1, regex_filter.call_count)
         args, kwargs = regex_filter.call_args
-        self.assertTrue(type(args[1] is m.ClusterTemplate))
-        self.assertEqual(args[2], ["name", "description", "plugin_name"])
+        self.assertIs(args[1], m.ClusterTemplate)
+        self.assertEqual(args[2], ["name", "description", "plugin_name",
+                                   "tenant_id"])
         self.assertEqual(args[3], {"name": "fox"})
 
     def test_clt_update(self):
@@ -594,7 +596,7 @@ class ClusterTemplates(test_base.ConductorManagerTestCase):
 
         # create a cluster and try updating the referenced cluster template
         cluster_val = copy.deepcopy(cluster_tests.SAMPLE_CLUSTER)
-        cluster_val['name'] = "ClusterTempalteUpdateTestCluster"
+        cluster_val['name'] = "ClusterTemplateUpdateTestCluster"
         cluster_val['cluster_template_id'] = clt['id']
         self.api.cluster_create(ctx, cluster_val)
         update_values = {"name": "noUpdateInUseName"}

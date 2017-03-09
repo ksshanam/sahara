@@ -13,11 +13,11 @@ You can run a job on an existing or new transient cluster.
 Run job
 =======
 
-.. rest_method::  POST /v1.1/{tenant_id}/jobs/{job_id}/execute
+.. rest_method::  POST /v1.1/{project_id}/jobs/{job_id}/execute
 
 Runs a job.
 
-Error response codes:202,
+Normal response codes:202
 
 
 Request
@@ -25,8 +25,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_id: job_id
+   - project_id: url_project_id
+   - job_id: url_job_id
 
 Request Example
 ---------------
@@ -43,13 +43,12 @@ Request Example
 List jobs
 =========
 
-.. rest_method::  GET /v1.1/{tenant_id}/jobs
+.. rest_method::  GET /v1.1/{project_id}/jobs
 
 Lists all jobs.
 
 
 Normal response codes: 200
-Error response codes:
 
 
 Request
@@ -57,7 +56,7 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
+   - project_id: url_project_id
    - limit: limit
    - marker: marker
    - sort_by: sort_by_jobs
@@ -70,18 +69,18 @@ Response Parameters
 .. rest_parameters:: parameters.yaml
 
    - jobs: jobs
-   - description: description
+   - description: job_description
    - tenant_id: tenant_id
    - created_at: created_at
    - mains: mains
    - updated_at: updated_at
    - libs: libs
-   - is_protected: is_protected
+   - is_protected: object_is_protected
    - interface: interface
-   - is_public: is_public
+   - is_public: object_is_public
    - type: type
-   - id: id
-   - name: name
+   - id: job_id
+   - name: job_name
    - markers: markers
    - prev: prev
    - next: next
@@ -89,7 +88,7 @@ Response Parameters
 
 Response Example
 ----------------
-..rest_method:: GET /v1.1/{tenant_id}/jobs?limit=2
+..rest_method:: GET /v1.1/{project_id}/jobs?limit=2
 
 .. literalinclude:: samples/jobs/jobs-list-response.json
    :language: javascript
@@ -100,11 +99,11 @@ Response Example
 Create job
 ==========
 
-.. rest_method::  POST /v1.1/{tenant_id}/jobs
+.. rest_method::  POST /v1.1/{project_id}/jobs
 
 Creates a job object.
 
-Error response codes:202,
+Normal response codes:202
 
 
 Request
@@ -112,7 +111,7 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
+   - project_id: url_project_id
 
 
 Request Example
@@ -128,18 +127,18 @@ Response Parameters
 
 .. rest_parameters:: parameters.yaml
 
-   - description: description
+   - description: job_description
    - tenant_id: tenant_id
    - created_at: created_at
    - mains: mains
    - updated_at: updated_at
    - libs: libs
-   - is_protected: is_protected
+   - is_protected: object_is_protected
    - interface: interface
-   - is_public: is_public
+   - is_public: object_is_public
    - type: type
-   - id: id
-   - name: name
+   - id: job_id
+   - name: job_name
 
 
 
@@ -148,13 +147,12 @@ Response Parameters
 Show job details
 ================
 
-.. rest_method::  GET /v1.1/{tenant_id}/jobs/{job_id}
+.. rest_method::  GET /v1.1/{project_id}/jobs/{job_id}
 
 Shows details for a job.
 
 
 Normal response codes: 200
-Error response codes:
 
 
 Request
@@ -162,8 +160,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_id: job_id
+   - project_id: url_project_id
+   - job_id: url_job_id
 
 
 Response Parameters
@@ -171,18 +169,18 @@ Response Parameters
 
 .. rest_parameters:: parameters.yaml
 
-   - description: description
+   - description: job_description
    - tenant_id: tenant_id
    - created_at: created_at
    - mains: mains
    - updated_at: updated_at
    - libs: libs
-   - is_protected: is_protected
+   - is_protected: object_is_protected
    - interface: interface
-   - is_public: is_public
+   - is_public: object_is_public
    - type: type
-   - id: id
-   - name: name
+   - id: job_id
+   - name: job_name
 
 
 
@@ -198,11 +196,11 @@ Response Example
 Remove job
 ==========
 
-.. rest_method::  DELETE /v1.1/{tenant_id}/jobs/{job_id}
+.. rest_method::  DELETE /v1.1/{project_id}/jobs/{job_id}
 
 Removes a job.
 
-Error response codes:204,
+Normal response codes:204
 
 
 Request
@@ -210,8 +208,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_id: job_id
+   - project_id: url_project_id
+   - job_id: url_job_id
 
 
 
@@ -221,11 +219,11 @@ Request
 Update job object
 =================
 
-.. rest_method::  PATCH /v1.1/{tenant_id}/jobs/{job_id}
+.. rest_method::  PATCH /v1.1/{project_id}/jobs/{job_id}
 
 Updates a job object.
 
-Error response codes:202,
+Normal response codes:202
 
 
 Request
@@ -233,8 +231,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_id: job_id
+   - project_id: url_project_id
+   - job_id: url_job_id
 
 Request Example
 ---------------
@@ -249,18 +247,18 @@ Response Parameters
 
 .. rest_parameters:: parameters.yaml
 
-   - description: description
+   - description: job_description
    - tenant_id: tenant_id
    - created_at: created_at
    - mains: mains
    - updated_at: updated_at
    - libs: libs
-   - is_protected: is_protected
+   - is_protected: object_is_protected
    - interface: interface
-   - is_public: is_public
+   - is_public: object_is_public
    - type: type
-   - id: id
-   - name: name
+   - id: job_id
+   - name: job_name
 
 
 

@@ -16,7 +16,7 @@
 #use_floating_ips=true
 
 # Use Neutron or Nova Network (boolean value)
-#use_neutron=false
+#use_neutron=true
 
 # Use network namespaces for communication (only valid to use in conjunction
 # with use_neutron=True)
@@ -76,10 +76,6 @@
 # of default WARNING level). (boolean value)
 #debug=false
 
-# Print more verbose output (set logging level to INFO instead
-# of default WARNING level). (boolean value)
-#verbose=false
-
 # Log output to standard error. (boolean value)
 #use_stderr=true
 
@@ -101,7 +97,7 @@
 
 # List of plugins to be loaded. Sahara preserves the order of
 # the list when returning it. (list value)
-#plugins=vanilla,hdp,spark,cdh
+#plugins=vanilla,spark,cdh,ambari,storm,mapr
 
 [database]
 

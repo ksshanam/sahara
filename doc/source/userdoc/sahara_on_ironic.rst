@@ -1,4 +1,4 @@
-How do run a Sahara cluster on bare metal servers
+How to run a Sahara cluster on bare metal servers
 =================================================
 
 Hadoop clusters are designed to store and analyze extremely large amounts
@@ -108,16 +108,16 @@ is time consuming, and the whole root disk is filled from ``/dev/zero`` for
 security reasons.
 
 Known limitations:
-==================
+------------------
 
 * Security groups are not applied.
 * When booting a nova instance with a bare metal flavor, the user can not
   provide a pre-created neutron port to ``nova boot`` command. `LP1544195
   <https://bugs.launchpad.net/nova/+bug/1544195>`_
-* Nodes are not isolated by tenants.
+* Nodes are not isolated by projects.
 * VM to Bare Metal network routing is not allowed.
 * The user has to specify the count of ironic nodes before Devstack deploys
-  an Openstack.
+  an OpenStack.
 * The user cannot use the same image for several ironic node types.
   For example, if there are 3 ironic node types, the user has to create
   3 images and 3 flavors.

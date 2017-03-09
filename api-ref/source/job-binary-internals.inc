@@ -11,7 +11,7 @@ and libraries that are stored in the internal database.
 Create job binary internal
 ==========================
 
-.. rest_method::  PUT /v1.1/{tenant_id}/job-binary-internals/{name}
+.. rest_method::  PUT /v1.1/{project_id}/job-binary-internals/{name}
 
 Creates a job binary internal.
 
@@ -22,7 +22,7 @@ database.
 Specify the file contents (raw data or script text) in the request
 body. Specify the file name in the URI.
 
-Error response codes:202,
+Normal response codes:202
 
 
 Request
@@ -30,8 +30,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - name: name
+   - project_id: url_project_id
+   - name: url_job_binary_internals_name
 
 
 Response Parameters
@@ -39,14 +39,14 @@ Response Parameters
 
 .. rest_parameters:: parameters.yaml
 
-   - name: name
+   - name: job_binary_internals_name
    - tenant_id: tenant_id
    - created_at: created_at
    - updated_at: updated_at
-   - is_protected: is_protected
-   - is_public: is_public
+   - is_protected: object_is_protected
+   - is_public: object_is_public
    - datasize: datasize
-   - id: id
+   - id: job_binary_internals_id
 
 
 
@@ -55,7 +55,7 @@ Response Parameters
 Show job binary internal data
 =============================
 
-.. rest_method::  GET /v1.1/{tenant_id}/job-binary-internals/{job_binary_internals_id}/data
+.. rest_method::  GET /v1.1/{project_id}/job-binary-internals/{job_binary_internals_id}/data
 
 Shows data for a job binary internal.
 
@@ -77,7 +77,6 @@ Example response:
 
 
 Normal response codes: 200
-Error response codes:
 
 
 Request
@@ -85,8 +84,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_binary_internals_id: job_binary_internals_id
+   - project_id: url_project_id
+   - job_binary_internals_id: url_job_binary_internals_id
 
 
 Response Parameters
@@ -110,13 +109,12 @@ Response Example
 Show job binary internal details
 ================================
 
-.. rest_method::  GET /v1.1/{tenant_id}/job-binary-internals/{job_binary_internals_id}
+.. rest_method::  GET /v1.1/{project_id}/job-binary-internals/{job_binary_internals_id}
 
 Shows details for a job binary internal.
 
 
 Normal response codes: 200
-Error response codes:
 
 
 Request
@@ -124,8 +122,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_binary_internals_id: job_binary_internals_id
+   - project_id: url_project_id
+   - job_binary_internals_id: url_job_binary_internals_id
 
 
 Response Parameters
@@ -133,14 +131,14 @@ Response Parameters
 
 .. rest_parameters:: parameters.yaml
 
-   - name: name
+   - name: job_binary_internals_name
    - tenant_id: tenant_id
    - created_at: created_at
    - updated_at: updated_at
-   - is_protected: is_protected
-   - is_public: is_public
+   - is_protected: object_is_protected
+   - is_public: object_is_public
    - datasize: datasize
-   - id: id
+   - id: job_binary_internals_id
 
 
 
@@ -156,11 +154,11 @@ Response Example
 Delete job binary internal
 ==========================
 
-.. rest_method::  DELETE /v1.1/{tenant_id}/job-binary-internals/{job_binary_internals_id}
+.. rest_method::  DELETE /v1.1/{project_id}/job-binary-internals/{job_binary_internals_id}
 
 Deletes a job binary internal.
 
-Error response codes:204,
+Normal response codes:204
 
 
 Request
@@ -168,8 +166,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_binary_internals_id: job_binary_internals_id
+   - project_id: url_project_id
+   - job_binary_internals_id: url_job_binary_internals_id
 
 
 
@@ -179,11 +177,11 @@ Request
 Update job binary internal
 ==========================
 
-.. rest_method::  PATCH /v1.1/{tenant_id}/job-binary-internals/{job_binary_internals_id}
+.. rest_method::  PATCH /v1.1/{project_id}/job-binary-internals/{job_binary_internals_id}
 
 Updates a job binary internal.
 
-Error response codes:202,
+Normal respose codes:202
 
 
 Request
@@ -191,8 +189,8 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
-   - job_binary_internals_id: job_binary_internals_id
+   - project_id: url_project_id
+   - job_binary_internals_id: url_job_binary_internals_id
 
 Request Example
 ---------------
@@ -209,13 +207,12 @@ Request Example
 List job binary internals
 =========================
 
-.. rest_method::  GET /v1.1/{tenant_id}/job-binary-internals
+.. rest_method::  GET /v1.1/{project_id}/job-binary-internals
 
 Lists the available job binary internals.
 
 
 Normal response codes: 200
-Error response codes:
 
 
 Request
@@ -223,7 +220,7 @@ Request
 
 .. rest_parameters:: parameters.yaml
 
-   - tenant_id: url_tenant_id
+   - project_id: url_project_id
    - limit: limit
    - marker: marker
    - sort_by: sort_by_job_binary_internals
@@ -239,20 +236,20 @@ Response Parameters
    - prev: prev
    - next: next
    - binaries: binaries
-   - name: name
+   - name: job_binary_internals_name
    - tenant_id: tenant_id
    - created_at: created_at
    - updated_at: updated_at
-   - is_protected: is_protected
-   - is_public: is_public
+   - is_protected: object_is_protected
+   - is_public: object_is_public
    - datasize: datasize
-   - id: id
+   - id: job_binary_internals_id
 
 
 
 Response Example
 ----------------
-.. rest_method:: GET /v1.1/{tenant_id}/job-binary-internals
+.. rest_method:: GET /v1.1/{project_id}/job-binary-internals
 
 .. literalinclude:: samples/job-binary-internals/list-response.json
    :language: javascript
