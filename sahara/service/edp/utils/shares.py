@@ -219,7 +219,6 @@ class _NFSMounter(_ShareHandler):
         "centos": _REDHAT_INSTALL,
         "fedora": _REDHAT_INSTALL,
         "redhatenterpriseserver": _REDHAT_INSTALL,
-        "redhat": _REDHAT_INSTALL,
         "ubuntu": _DEBIAN_INSTALL
     }
 

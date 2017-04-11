@@ -47,7 +47,5 @@ CLI tools packaged with sahara contain log translations.
 * Debug: no translation
 * Info: _LI
 * Warning: _LW
-* Error: _LE
-* Critical: _LC
 
 .. _PEP 3101: https://www.python.org/dev/peps/pep-3101/
