@@ -25,8 +25,6 @@ import six
 from sahara import conductor as c
 from sahara import context
 from sahara.i18n import _
-from sahara.i18n import _LI
-from sahara.i18n import _LW
 from sahara.service import networks
 from sahara.service import volumes
 from sahara.utils import cluster as cluster_utils
@@ -95,8 +93,7 @@ class Engine(object):
         ips_assigned = set()
         self._ips_assign(ips_assigned, cluster, instances)
 
-        LOG.info(
-            _LI("All instances have IPs assigned"))
+        LOG.info("All instances have IPs assigned")
 
         cluster = conductor.cluster_get(context.ctx(), cluster)
         instances = cluster_utils.get_instances(cluster, ips_assigned)
@@ -110,7 +107,7 @@ class Engine(object):
                     tg.spawn("wait-for-ssh-%s" % instance.instance_name,
                              self._wait_until_accessible, instance)
 
-        LOG.info(_LI("All instances are accessible"))
+        LOG.info("All instances are accessible")
 
     @poll_utils.poll_status(
         'wait_until_accessible', _("Wait for instance accessibility"),
@@ -244,12 +241,12 @@ sed '/^Defaults    requiretty*/ s/^/#/' -i /etc/sudoers\n
             security_group = b.execute_with_retries(client.get, name)
             if (security_group.name !=
                     g.generate_auto_security_group_name(node_group)):
-                LOG.warning(_LW("Auto security group for node group {name} is "
-                                "not found").format(name=node_group.name))
+                LOG.warning("Auto security group for node group {name} is "
+                            "not found".format(name=node_group.name))
                 return
             b.execute_with_retries(client.delete, name)
         except Exception:
-            LOG.warning(_LW("Failed to delete security group {name}").format(
+            LOG.warning("Failed to delete security group {name}".format(
                 name=name))
 
     def _delete_aa_server_groups(self, cluster):
@@ -281,20 +278,20 @@ sed '/^Defaults    requiretty*/ s/^/#/' -i /etc/sudoers\n
                 b.execute_with_retries(networks.delete_floating_ip,
                                        instance.instance_id)
             except nova_exceptions.NotFound:
-                LOG.warning(_LW("Attempted to delete non-existent floating IP "
-                                "in pool {pool} from instance")
+                LOG.warning("Attempted to delete non-existent floating IP "
+                            "in pool {pool} from instance"
                             .format(pool=instance.node_group.floating_ip_pool))
 
         try:
             volumes.detach_from_instance(instance)
         except Exception:
-            LOG.warning(_LW("Detaching volumes from instance failed"))
+            LOG.warning("Detaching volumes from instance failed")
 
         try:
             b.execute_with_retries(nova.client().servers.delete,
                                    instance.instance_id)
         except nova_exceptions.NotFound:
-            LOG.warning(_LW("Attempted to delete non-existent instance"))
+            LOG.warning("Attempted to delete non-existent instance")
 
         conductor.instance_remove(context.ctx(), instance)
 
