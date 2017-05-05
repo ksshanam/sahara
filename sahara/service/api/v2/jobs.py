@@ -71,37 +71,30 @@ def execute_job(data):
     return job_execution
 
 
-def get_job_execution_status(id):
-    return manager.get_job_status(id)
-
-
 def job_execution_list(**kwargs):
     return conductor.job_execution_get_all(context.ctx(),
                                            regex_search=True, **kwargs)
 
 
-def get_job_execution(id):
-    return conductor.job_execution_get(context.ctx(), id)
-
-
-def cancel_job_execution(id):
-    context.set_current_job_execution_id(id)
-    job_execution = conductor.job_execution_get(context.ctx(), id)
-    api.OPS.cancel_job_execution(id)
-
-    return job_execution
+def get_job_execution(id, refresh_status=False):
+    if refresh_status:
+        return manager.get_job_status(id)
+    else:
+        return conductor.job_execution_get(context.ctx(), id)
 
 
 def update_job_execution(id, values):
-    _update_status(values.pop("info", None))
+    _update_status(values.pop("info", None), id)
     return conductor.job_execution_update(context.ctx(), id, values)
 
 
-def _update_status(info):
+def _update_status(info, id):
     if info:
         status = info.get("status", None)
         if status == edp.JOB_ACTION_SUSPEND:
             api.OPS.job_execution_suspend(id)
+        if status == edp.JOB_ACTION_CANCEL:
+            api.OPS.cancel_job_execution(id)
 
 
 def delete_job_execution(id):
