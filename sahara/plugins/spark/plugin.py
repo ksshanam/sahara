@@ -67,7 +67,7 @@ class SparkProvider(p.ProvisioningPluginBase):
         return result
 
     def get_versions(self):
-        return ['1.6.0', '1.3.1']
+        return ['2.1.0', '1.6.0', '1.3.1']
 
     def get_configs(self, hadoop_version):
         return c_helper.get_plugin_configs()
@@ -101,8 +101,12 @@ class SparkProvider(p.ProvisioningPluginBase):
         sm_count = sum([ng.count for ng
                         in utils.get_node_groups(cluster, "master")])
 
-        if sm_count != 1:
+        if sm_count < 1:
             raise ex.RequiredServiceMissingException("Spark master")
+
+        if sm_count >= 2:
+            raise ex.InvalidComponentCountException("Spark master", "1",
+                                                    sm_count)
 
         sl_count = sum([ng.count for ng
                         in utils.get_node_groups(cluster, "slave")])
