@@ -20,8 +20,6 @@ import subprocess
 import sys
 import warnings
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -32,17 +30,22 @@ sys.path.append(os.path.abspath('../bin'))
 
 # -- General configuration -----------------------------------------------------
 
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage',
-              'sphinx.ext.viewcode', 'sphinxcontrib.httpdomain']
+              'sphinx.ext.viewcode', 'sphinxcontrib.httpdomain', 'oslo_config.sphinxconfiggen',
+              'oslo_config.sphinxext', 'openstackdocstheme']
 
-if not on_rtd:
-    extensions.append('oslosphinx')
-    extensions.append('oslo_config.sphinxconfiggen')
+# openstackdocstheme options
+repository_name = 'openstack/sahara'
+bug_project = 'sahara'
+bug_tag = 'doc'
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 config_generator_config_file = 'config-generator.conf'
 config_sample_basename = 'sahara'
@@ -117,6 +120,8 @@ if on_rtd:
     html_theme_path = ['.']
     html_theme = '_theme_rtd'
 
+html_theme = 'openstackdocs'
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -144,18 +149,7 @@ html_title = 'Sahara'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
-
-# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
-# using the given strftime format.
-#html_last_updated_fmt = '%b %d, %Y'
-git_cmd = ["git", "log", "--pretty=format:'%ad, commit %h'", "--date=local",
-           "-n1"]
-try:
-    html_last_updated_fmt = subprocess.check_output(git_cmd).decode('utf-8')
-except Exception:
-    warnings.warn('Cannot get last updated time from git repository. '
-                  'Not setting "html_last_updated_fmt".')
+# html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.

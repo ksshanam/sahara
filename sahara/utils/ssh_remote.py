@@ -94,6 +94,12 @@ SSH_TIMEOUTS_MAPPING = {
 _global_remote_semaphore = None
 
 
+def _get_access_ip(instance):
+    if CONF.proxy_command and CONF.proxy_command_use_internal_ip:
+        return instance.internal_ip
+    return instance.management_ip
+
+
 def _default_timeout(func):
     timeout = SSH_TIMEOUTS_MAPPING.get(func.__name__, 'ssh_timeout_files')
     return getattr(CONF, timeout, CONF.ssh_timeout_common)
@@ -352,7 +358,7 @@ def _read_file_from(remote_file, run_as_root=False):
                 'rm %s' % fl, run_as_root=True, raise_when_error=False)
 
 
-def __get_python_to_execute():
+def _get_python_to_execute():
     try:
         _execute_command('python3 --version')
     except Exception:
@@ -362,7 +368,7 @@ def __get_python_to_execute():
 
 
 def _get_os_distrib():
-    python_version = __get_python_to_execute()
+    python_version = _get_python_to_execute()
     return _execute_command(
         ('printf "import platform\nprint(platform.linux_distribution('
          'full_distribution_name=0)[0])" | {}'.format(python_version)),
@@ -370,7 +376,7 @@ def _get_os_distrib():
 
 
 def _get_os_version():
-    python_version = __get_python_to_execute()
+    python_version = _get_python_to_execute()
     return _execute_command(
         ('printf "import platform\nprint(platform.linux_distribution()[1])"'
          ' | {}'.format(python_version)), run_as_root=False)[1].strip()
@@ -639,7 +645,7 @@ class InstanceInteropHelper(remote.Remote):
         ctx = context.current()
         neutron_info['token'] = context.get_auth_token()
         neutron_info['tenant'] = ctx.tenant_name
-        neutron_info['host'] = instance.management_ip
+        neutron_info['host'] = _get_access_ip(instance)
 
         log_info = copy.deepcopy(neutron_info)
         del log_info['token']
@@ -664,7 +670,7 @@ class InstanceInteropHelper(remote.Remote):
                                            info['tenant'], auth=auth)
             keywords['router_id'] = client.get_router()
 
-        keywords['host'] = instance.management_ip
+        keywords['host'] = _get_access_ip(instance)
         keywords['port'] = port
 
         try:
@@ -713,8 +719,6 @@ class InstanceInteropHelper(remote.Remote):
         # fp -- just compare to internal?
         # in the neutron case, we check the node group for the
         # access_instance and look for fp
-        # in the nova case, we compare management_ip to internal_ip or even
-        # use the nova interface
         elif CONF.use_namespaces and not net_utils.has_floating_ip(
                 access_instance):
             # Build a session through a netcat socket in the Neutron namespace
@@ -728,7 +732,9 @@ class InstanceInteropHelper(remote.Remote):
                 proxy_command, instance=access_instance, port=22,
                 info=None, rootwrap_command=rootwrap)
 
-        return (self.instance.management_ip,
+        host_ip = _get_access_ip(self.instance)
+
+        return (host_ip,
                 host_ng.image_username,
                 cluster.management_private_key,
                 proxy_command,
@@ -771,7 +777,7 @@ class InstanceInteropHelper(remote.Remote):
 
     def get_http_client(self, port, info=None):
         self._log_command('Retrieving HTTP session for {0}:{1}'.format(
-            self.instance.management_ip, port))
+            _get_access_ip(self.instance), port))
 
         host_ng = self.instance.node_group
         cluster = host_ng.cluster
@@ -795,13 +801,10 @@ class InstanceInteropHelper(remote.Remote):
             proxy_command = CONF.proxy_command
 
         # tmckay-fp again we can check the node group for the instance
-        # what are the implications for nova here? None, because use_namespaces
-        # is synonomous with use_neutron
-        # this is a test on whether access_instance has a floating_ip
+        # what are the implications for nova here? None.
+        # This is a test on whether access_instance has a floating_ip
         # in the neutron case, we check the node group for the
         # access_instance and look for fp
-        # in the nova case, we compare management_ip to internal_ip or even
-        # use the nova interface
         elif (CONF.use_namespaces and not net_utils.has_floating_ip(
                 access_instance)):
             # need neutron info
@@ -818,7 +821,7 @@ class InstanceInteropHelper(remote.Remote):
                 proxy_command, instance=access_instance, port=access_port,
                 info=info, rootwrap_command=rootwrap)
 
-        return _get_http_client(self.instance.management_ip, port,
+        return _get_http_client(_get_access_ip(self.instance), port,
                                 proxy_command, gateway_host,
                                 gateway_username,
                                 gateway_private_key)
@@ -826,7 +829,7 @@ class InstanceInteropHelper(remote.Remote):
     def close_http_session(self, port):
         global _sessions
 
-        host = self.instance.management_ip
+        host = _get_access_ip(self.instance)
         self._log_command(_("Closing HTTP session for %(host)s:%(port)s") % {
                           'host': host, 'port': port})
 
@@ -874,6 +877,10 @@ class InstanceInteropHelper(remote.Remote):
         self._log_command(description)
         return self._run_s(_read_file_from, timeout, description,
                            remote_file, run_as_root)
+
+    def get_python_version(self, timeout=None):
+        return self._run_s(
+            _get_python_to_execute, timeout, "get_python_version")
 
     def get_os_distrib(self, timeout=None):
         return self._run_s(_get_os_distrib, timeout, "get_os_distrib")

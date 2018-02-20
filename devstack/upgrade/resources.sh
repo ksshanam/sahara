@@ -2,10 +2,10 @@
 
 set -o errexit
 
-source $GRENADE_DIR/grenaderc
-source $GRENADE_DIR/functions
+. $GRENADE_DIR/grenaderc
+. $GRENADE_DIR/functions
 
-source $TOP_DIR/openrc admin admin
+. $TOP_DIR/openrc admin admin
 
 set -o xtrace
 
@@ -77,7 +77,7 @@ function create_flavor {
 }
 
 function register_image {
-    eval $(openstack --os-image-api-version 1 image show \
+    eval $(openstack image show \
             -f shell -c id $SAHARA_IMAGE_NAME)
     resource_save sahara image_id $id
     openstack dataprocessing image register $id --username $SAHARA_IMAGE_USER

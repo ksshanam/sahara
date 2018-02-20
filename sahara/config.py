@@ -71,23 +71,15 @@ networking_opts = [
                 default=True,
                 help='If set to True, Sahara will use floating IPs to '
                      'communicate with instances. To make sure that all '
-                     'instances have floating IPs assigned in Nova Network '
-                     'set "auto_assign_floating_ip=True" in nova.conf. '
-                     'If Neutron is used for networking, make sure that '
-                     'all Node Groups have "floating_ip_pool" parameter '
-                     'defined.'),
+                     'instances have floating IPs assigned, make sure '
+                     'that all Node Groups have "floating_ip_pool" '
+                     'parameter defined.'),
     cfg.StrOpt('node_domain',
                default='novalocal',
-               help="The suffix of the node's FQDN. In nova-network that is "
-                    "the dhcp_domain config parameter."),
-    cfg.BoolOpt('use_neutron',
-                default=True,
-                help="Use Neutron Networking (False indicates the use of Nova "
-                     "networking)."),
+               help="The suffix of the node's FQDN."),
     cfg.BoolOpt('use_namespaces',
                 default=False,
-                help="Use network namespaces for communication (only valid to "
-                     "use in conjunction with use_neutron=True)."),
+                help="Use network namespaces for communication."),
     cfg.BoolOpt('use_rootwrap',
                 default=False,
                 help="Use rootwrap facility to allow non-root users to run "
@@ -121,21 +113,16 @@ CONF.register_opts(dns_opts)
 
 log.register_options(CONF)
 
-log.set_defaults(default_log_levels=[
-    'amqplib=WARN',
-    'qpid.messaging=INFO',
+sahara_default_log_levels = [
     'stevedore=INFO',
     'eventlet.wsgi.server=WARN',
-    'sqlalchemy=WARN',
-    'boto=WARN',
-    'suds=INFO',
-    'keystone=INFO',
     'paramiko=WARN',
     'requests=WARN',
-    'iso8601=WARN',
-    'oslo_messaging=INFO',
     'neutronclient=INFO',
-])
+]
+
+log.set_defaults(
+    default_log_levels=log.get_default_log_levels()+sahara_default_log_levels)
 
 
 def list_opts():
@@ -154,7 +141,9 @@ def list_opts():
     from sahara.swift import swift_helper
     from sahara.utils import cluster_progress_ops as cpo
     from sahara.utils.openstack import base
+    from sahara.utils.openstack import glance
     from sahara.utils.openstack import heat
+    from sahara.utils.openstack import manila
     from sahara.utils.openstack import neutron
     from sahara.utils.openstack import nova
     from sahara.utils.openstack import swift
@@ -192,8 +181,12 @@ def list_opts():
          itertools.chain(api.conductor_opts)),
         (cinder.cinder_group.name,
          itertools.chain(cinder.opts)),
+        (glance.glance_group.name,
+         itertools.chain(glance.opts)),
         (heat.heat_group.name,
          itertools.chain(heat.opts)),
+        (manila.manila_group.name,
+         itertools.chain(manila.opts)),
         (neutron.neutron_group.name,
          itertools.chain(neutron.opts)),
         (nova.nova_group.name,
@@ -202,6 +195,8 @@ def list_opts():
          itertools.chain(swift.opts)),
         (keystone.keystone_group.name,
          itertools.chain(keystone.ssl_opts)),
+        (keystone.trustee_group.name,
+         itertools.chain(keystone.trustee_opts)),
         (base.retries.name,
          itertools.chain(base.opts)),
         (swift_helper.public_endpoint_cert_group.name,
@@ -221,15 +216,3 @@ def parse_configs(conf_files=None):
         raise ex.ConfigurationError(
             _("Option '%(option)s' is required for config group '%(group)s'") %
             {'option': roe.opt_name, 'group': roe.group.name})
-    validate_configs()
-
-
-def validate_network_configs():
-    if CONF.use_namespaces and not CONF.use_neutron:
-        raise ex.ConfigurationError(
-            _('use_namespaces can not be set to "True" when use_neutron '
-              'is set to "False"'))
-
-
-def validate_configs():
-    validate_network_configs()

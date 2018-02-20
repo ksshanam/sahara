@@ -83,10 +83,6 @@ function configure_sahara_apache_wsgi {
 function configure_sahara {
     sudo install -d -o $STACK_USER $SAHARA_CONF_DIR
 
-    if [[ -f $SAHARA_DIR/etc/sahara/policy.json ]]; then
-        cp -p $SAHARA_DIR/etc/sahara/policy.json $SAHARA_CONF_DIR
-    fi
-
     cp -p $SAHARA_DIR/etc/sahara/api-paste.ini $SAHARA_CONF_DIR
 
     # Create auth cache dir
@@ -98,10 +94,16 @@ function configure_sahara {
 
     # Set admin user parameters needed for trusts creation
     iniset $SAHARA_CONF_FILE \
-        keystone_authtoken admin_tenant_name $SERVICE_TENANT_NAME
-    iniset $SAHARA_CONF_FILE keystone_authtoken admin_user sahara
+        trustee project_name $SERVICE_TENANT_NAME
+    iniset $SAHARA_CONF_FILE trustee username sahara
     iniset $SAHARA_CONF_FILE \
-        keystone_authtoken admin_password $SERVICE_PASSWORD
+        trustee password $SERVICE_PASSWORD
+    iniset $SAHARA_CONF_FILE \
+        trustee user_domain_name "$SERVICE_DOMAIN_NAME"
+    iniset $SAHARA_CONF_FILE \
+        trustee project_domain_name "$SERVICE_DOMAIN_NAME"
+    iniset $SAHARA_CONF_FILE \
+        trustee auth_url "$KEYSTONE_SERVICE_URI/v3"
 
     iniset_rpc_backend sahara $SAHARA_CONF_FILE DEFAULT
 
@@ -119,14 +121,11 @@ function configure_sahara {
         database connection `database_connection_url sahara`
 
     if is_service_enabled neutron; then
-        iniset $SAHARA_CONF_FILE DEFAULT use_neutron true
         iniset $SAHARA_CONF_FILE neutron endpoint_type $SAHARA_ENDPOINT_TYPE
         if is_ssl_enabled_service "neutron" \
             || is_service_enabled tls-proxy; then
             iniset $SAHARA_CONF_FILE neutron ca_file $SSL_BUNDLE_FILE
         fi
-    else
-        iniset $SAHARA_CONF_FILE DEFAULT use_neutron false
     fi
 
     if is_ssl_enabled_service "heat" || is_service_enabled tls-proxy; then

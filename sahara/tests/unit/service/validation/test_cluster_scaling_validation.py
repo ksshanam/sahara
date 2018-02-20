@@ -63,10 +63,15 @@ class TestScalingValidation(u.ValidationTestCase):
                 self.assertEqual(expected_message, message)
                 raise e
 
+    @mock.patch('sahara.service.api.v10.get_node_group_template')
+    @mock.patch('sahara.utils.openstack.nova.client')
     @mock.patch("sahara.service.api.OPS")
-    def test_check_cluster_scaling_resize_ng(self, ops):
+    def test_check_cluster_scaling_resize_ng(self, ops, nova_client, get_ngt):
         ops.get_engine_type_and_version.return_value = "direct.1.1"
-        ng1 = tu.make_ng_dict('ng', '42', ['namenode'], 1)
+        ng1 = tu.make_ng_dict('ng', '42', ['namenode'], 1,
+                              node_group_template_id='aaa')
+        ng2 = tu.make_ng_dict('ng', '42', ['namenode'], 1,
+                              resource=True)
         cluster = tu.create_cluster("cluster1", "tenant1", "fake", "0.1",
                                     [ng1],
                                     status=c_u.CLUSTER_STATUS_VALIDATING,
@@ -86,8 +91,7 @@ class TestScalingValidation(u.ValidationTestCase):
             'resize_node_groups': [
                 {
                     'name': 'a',
-                    'flavor_id': '42',
-                    'node_processes': ['namenode']
+                    'count': 2
                 }
             ],
         }
@@ -98,19 +102,36 @@ class TestScalingValidation(u.ValidationTestCase):
         data.update({'resize_node_groups': [
             {
                 'name': 'a',
-                'flavor_id': '42',
-                'node_processes': ['namenode']
+                'count': 2
             },
             {
                 'name': 'a',
-                'flavor_id': '42',
-                'node_processes': ['namenode']
+                'count': 2
             }
         ]})
         self._assert_check_scaling(
             data=data, cluster=cluster,
             expected_message=self.duplicates_detected,
             expected_exception=ex.InvalidDataException)
+
+        data = {
+            'resize_node_groups': [
+                {
+                    'name': 'ng',
+                    'count': 2
+                }
+            ],
+        }
+
+        client = mock.Mock()
+        nova_client.return_value = client
+        client.flavors.list.return_value = []
+        get_ngt.return_value = ng2
+
+        self._assert_check_scaling(
+            data=data, cluster=cluster,
+            expected_message="Requested flavor '42' not found",
+            expected_exception=ex.NotFoundException)
 
     @mock.patch("sahara.service.api.OPS")
     def test_check_cluster_scaling_add_ng(self, ops):
@@ -190,6 +211,23 @@ class TestScalingValidation(u.ValidationTestCase):
         self.assertEqual(1, req_data.call_count)
         self._assert_calls(bad_req, bad_req_i)
 
+    @mock.patch("sahara.utils.api.request_data")
+    @mock.patch("sahara.utils.api.bad_request")
+    def _assert_cluster_scaling_validation_v2(self,
+                                              bad_req=None,
+                                              req_data=None,
+                                              data=None,
+                                              bad_req_i=None):
+        m_func = mock.Mock()
+        m_func.__name__ = "m_func"
+        req_data.return_value = data
+        v.validate(c_schema.CLUSTER_SCALING_SCHEMA_V2,
+                   self._create_object_fun)(m_func)(data=data,
+                                                    cluster_id='42')
+
+        self.assertEqual(1, req_data.call_count)
+        self._assert_calls(bad_req, bad_req_i)
+
     @mock.patch("sahara.service.api.OPS")
     def test_cluster_scaling_scheme_v_resize_ng(self, ops):
         ops.get_engine_type_and_version.return_value = "direct.1.1"
@@ -221,6 +259,70 @@ class TestScalingValidation(u.ValidationTestCase):
             bad_req_i=(1, 'VALIDATION_ERROR',
                        u"resize_node_groups[0]: 'count' is a required "
                        u"property")
+        )
+        data = {
+            'resize_node_groups': [
+                {
+                    'name': 'a',
+                    'flavor_id': '42',
+                    'count': 2
+                }
+            ]
+        }
+        self._assert_cluster_scaling_validation(
+            data=data,
+            bad_req_i=(1, 'VALIDATION_ERROR',
+                       u"resize_node_groups[0]: Additional properties are not "
+                       u"allowed ('flavor_id' was unexpected)")
+        )
+
+    @mock.patch("sahara.service.api.OPS")
+    def test_cluster_scaling_scheme_v_resize_ng_v2(self, ops):
+        ops.get_engine_type_and_version.return_value = "direct.1.1"
+        self._create_object_fun = mock.Mock()
+        data = {
+        }
+        self._assert_cluster_scaling_validation_v2(
+            data=data,
+            bad_req_i=(1, 'VALIDATION_ERROR',
+                       u'{} is not valid under any of the given schemas')
+        )
+        data = {
+            'resize_node_groups': [{}]
+        }
+        self._assert_cluster_scaling_validation_v2(
+            data=data,
+            bad_req_i=(1, 'VALIDATION_ERROR',
+                       u"resize_node_groups[0]: 'name' is a required property")
+        )
+        data = {
+            'resize_node_groups': [
+                {
+                    'name': 'a'
+                }
+            ]
+        }
+        self._assert_cluster_scaling_validation_v2(
+            data=data,
+            bad_req_i=(1, 'VALIDATION_ERROR',
+                       u"resize_node_groups[0]: 'count' is a required "
+                       u"property")
+        )
+        data = {
+            'resize_node_groups': [
+                {
+                    'name': 'a',
+                    'flavor_id': '42',
+                    'instances': ['id1'],
+                    'count': 2
+                }
+            ]
+        }
+        self._assert_cluster_scaling_validation_v2(
+            data=data,
+            bad_req_i=(1, 'VALIDATION_ERROR',
+                       u"resize_node_groups[0]: Additional properties are not "
+                       u"allowed ('flavor_id' was unexpected)")
         )
 
     @mock.patch("sahara.service.api.OPS")
@@ -386,3 +488,38 @@ class TestScalingValidation(u.ValidationTestCase):
             data={}, cluster=cluster,
             expected_message="Cluster created before Juno release can't be "
                              "scaled with heat.1.1 engine")
+
+    @mock.patch('sahara.utils.openstack.images.image_manager')
+    @mock.patch('sahara.utils.openstack.nova.client')
+    @mock.patch("sahara.service.api.OPS")
+    def test_check_cluster_scaling_missing_resource(self, ops,
+                                                    m_nova, m_image):
+        ops.get_engine_type_and_version.return_value = "heat.1.1"
+        ng1 = tu.make_ng_dict('ng', '42', ['namenode'], 1)
+
+        nova = mock.Mock()
+        m_nova.return_value = nova
+        nova.keypairs.get.side_effect = u._get_keypair
+        cluster = tu.create_cluster(
+            "cluster1", "tenant1", "fake", "0.1", [ng1],
+            status=c_u.CLUSTER_STATUS_ACTIVE,
+            sahara_info={"infrastructure_engine": "heat.1.1"},
+            id='12321', user_keypair_id='keypair')
+        self._assert_check_scaling(
+            data={}, cluster=cluster,
+            expected_exception=ex.NotFoundException,
+            expected_message="Requested keypair 'keypair' not found")
+
+        image = mock.Mock()
+        m_image.return_value = image
+        image.list_registered.return_value = [mock.Mock(id='image1'),
+                                              mock.Mock(id='image2')]
+        cluster = tu.create_cluster(
+            "cluster1", "tenant1", "fake", "0.1", [ng1],
+            status=c_u.CLUSTER_STATUS_ACTIVE,
+            sahara_info={"infrastructure_engine": "heat.1.1"},
+            id='12321', default_image_id='image_id',
+            user_keypair_id='test_keypair')
+        self._assert_check_scaling(
+            data={}, cluster=cluster,
+            expected_message="Requested image 'image_id' is not registered")

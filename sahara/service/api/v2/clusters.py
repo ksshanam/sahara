@@ -54,9 +54,12 @@ def scale_cluster(id, data):
     # the next map is the main object we will work with
     # to_be_enlarged : {node_group_id: desired_amount_of_instances}
     to_be_enlarged = {}
+    node_group_instance_map = {}
     for ng in existing_node_groups:
         ng_id = g.find(cluster.node_groups, name=ng['name'])['id']
         to_be_enlarged.update({ng_id: ng['count']})
+        if 'instances' in ng:
+            node_group_instance_map.update({ng_id: ng['instances']})
 
     additional = construct_ngs_for_scaling(cluster, additional_node_groups)
     cluster = conductor.cluster_get(ctx, cluster)
@@ -82,7 +85,8 @@ def scale_cluster(id, data):
         if node_group.id not in to_be_enlarged:
             to_be_enlarged[node_group.id] = node_group.count
 
-    api.OPS.provision_scaled_cluster(id, to_be_enlarged)
+    api.OPS.provision_scaled_cluster(id, to_be_enlarged,
+                                     node_group_instance_map)
     return cluster
 
 
@@ -145,14 +149,14 @@ def _add_ports_for_auto_sg(ctx, cluster, plugin):
             conductor.node_group_update(ctx, ng, ports)
 
 
-def terminate_cluster(id):
+def terminate_cluster(id, force=False):
     context.set_current_cluster_id(id)
     cluster = c_u.change_cluster_status(id, c_u.CLUSTER_STATUS_DELETING)
 
     if cluster is None:
         return
 
-    api.OPS.terminate_cluster(id)
+    api.OPS.terminate_cluster(id, force)
     sender.status_notify(cluster.id, cluster.name, cluster.status,
                          "delete")
 

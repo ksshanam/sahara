@@ -77,8 +77,7 @@ class TestTrusts(base.SaharaTestCase):
     @mock.patch('sahara.context.current')
     def test_create_trust_for_cluster(self, context_current, auth_for_admin,
                                       create_trust, cluster_update, cl_get):
-        self.override_config('admin_tenant_name', 'admin_project',
-                             group='keystone_authtoken')
+        self.override_config('project_name', 'admin_project', group='trustee')
         trustor_auth = mock.Mock()
         fake_cluster = mock.Mock(trust_id=None)
         cl_get.return_value = fake_cluster

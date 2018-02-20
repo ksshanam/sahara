@@ -8,11 +8,6 @@
             "node_group_template_id": "{vanilla-271-default-worker}"
         },
         {
-            "name": "secondary-master",
-            "count": 1,
-            "node_group_template_id": "{vanilla-271-default-secondary-master}"
-        },
-        {
             "name": "master",
             "count": 1,
             "node_group_template_id": "{vanilla-271-default-master}"

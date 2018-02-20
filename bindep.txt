@@ -1,8 +1,11 @@
 # This file contains runtime (non-python) dependencies
-# More info at: http://docs.openstack.org/infra/bindep/readme.html
+# More info at: https://docs.openstack.org/infra/bindep/readme.html
 
 libssl-dev [platform:dpkg]
 openssl-devel [platform:rpm]
+
+# updates of the localized release notes require msgmerge
+gettext
 
 # Define the basic (test) requirements extracted from bindata-fallback.txt
 # - mysqladmin and psql

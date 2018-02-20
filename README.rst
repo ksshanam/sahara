@@ -2,8 +2,8 @@
 Team and repository tags
 ========================
 
-.. image:: http://governance.openstack.org/badges/sahara.svg
-    :target: http://governance.openstack.org/reference/tags/index.html
+.. image:: https://governance.openstack.org/tc/badges/sahara.svg
+    :target: https://governance.openstack.org/tc/reference/tags/index.html
 
 .. Change things from this point on
 
@@ -14,16 +14,17 @@ Sahara at wiki.openstack.org: https://wiki.openstack.org/wiki/Sahara
 
 Launchpad project: https://launchpad.net/sahara
 
-Sahara docs site: http://docs.openstack.org/developer/sahara
+Sahara docs site: https://docs.openstack.org/sahara/latest/
 
 Roadmap: https://wiki.openstack.org/wiki/Sahara/Roadmap
 
-Quickstart guide: http://docs.openstack.org/developer/sahara/devref/quickstart.html
+Quickstart guide: https://docs.openstack.org/sahara/latest/user/quickstart.html
 
-How to participate: http://docs.openstack.org/developer/sahara/devref/how_to_participate.html
+How to participate: https://docs.openstack.org/sahara/latest/contributor/how-to-participate.html
 
-Source: http://git.openstack.org/cgit/openstack/sahara
+Source: https://git.openstack.org/cgit/openstack/sahara
 
+Bugs and feature requests: https://bugs.launchpad.net/sahara
 
 License
 -------

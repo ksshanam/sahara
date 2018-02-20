@@ -19,7 +19,7 @@ from oslo_config import cfg
 
 opts = [
     cfg.ListOpt('job_binary_types',
-                default=['swift', 'manila', 'internal-db'],
+                default=['swift', 'manila', 'internal-db', 's3'],
                 help='List of job binary types to be loaded. Sahara '
                      'preserves the order of the list when returning it.'),
 ]

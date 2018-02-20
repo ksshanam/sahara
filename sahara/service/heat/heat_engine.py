@@ -84,7 +84,7 @@ class HeatEngine(e.Engine):
         for node_group in cluster.node_groups:
             conductor.node_group_update(ctx, node_group, {"count": 0})
 
-    def scale_cluster(self, cluster, target_count):
+    def scale_cluster(self, cluster, target_count, instances_to_delete=None):
         ctx = context.ctx()
 
         rollback_count = self._get_ng_counts(cluster)
@@ -94,7 +94,8 @@ class HeatEngine(e.Engine):
 
         inst_ids = self._launch_instances(
             cluster, target_count, SCALE_STAGES,
-            update_stack=True, disable_rollback=False)
+            update_stack=True, disable_rollback=False,
+            instances_to_delete=instances_to_delete)
 
         cluster = conductor.cluster_get(ctx, cluster)
         c_u.clean_cluster_from_empty_ng(cluster)
@@ -190,29 +191,32 @@ class HeatEngine(e.Engine):
         self._launch_instances(cluster, rollback_count, ROLLBACK_STAGES,
                                update_stack=True)
 
-    def shutdown_cluster(self, cluster):
+    def shutdown_cluster(self, cluster, force=False):
         """Shutdown specified cluster and all related resources."""
+        if force:
+            heat_shutdown = heat.abandon_stack
+        else:
+            heat_shutdown = heat.delete_stack
+
         try:
-            heat.delete_stack(cluster)
+            heat_shutdown(cluster)
         except heat_exc.HTTPNotFound:
-            LOG.warning('Did not find stack for cluster. Trying to delete '
-                        'cluster manually.')
-
-            # Stack not found. Trying to delete cluster like direct engine
-            #  do it
-            self._shutdown_instances(cluster)
-            self._delete_aa_server_groups(cluster)
-
-        self._clean_job_executions(cluster)
-        self._remove_db_objects(cluster)
+            LOG.warning('Did not find stack for cluster.')
+        except heat_exc.BadRequest:
+            LOG.error("Can't force delete cluster.", exc_info=True)
+        finally:
+            self._clean_job_executions(cluster)
+            self._remove_db_objects(cluster)
 
     @cpo.event_wrapper(
         True, step=_('Create Heat stack'), param=('cluster', 1))
     def _create_instances(self, cluster, target_count, update_stack=False,
-                          disable_rollback=True):
+                          disable_rollback=True, instances_to_delete=None):
+
         stack = ht.ClusterStack(cluster)
 
-        self._update_instance_count(stack, cluster, target_count)
+        self._update_instance_count(stack, cluster, target_count,
+                                    instances_to_delete)
         stack.instantiate(update_existing=update_stack,
                           disable_rollback=disable_rollback)
         heat.wait_stack_completion(
@@ -221,12 +225,14 @@ class HeatEngine(e.Engine):
         return self._populate_cluster(cluster, stack)
 
     def _launch_instances(self, cluster, target_count, stages,
-                          update_stack=False, disable_rollback=True):
+                          update_stack=False, disable_rollback=True,
+                          instances_to_delete=None):
         # create all instances
         cluster = c_u.change_cluster_status(cluster, stages[0])
 
         inst_ids = self._create_instances(
-            cluster, target_count, update_stack, disable_rollback)
+            cluster, target_count, update_stack, disable_rollback,
+            instances_to_delete)
 
         # wait for all instances are up and networks ready
         cluster = c_u.change_cluster_status(cluster, stages[1])
@@ -246,14 +252,27 @@ class HeatEngine(e.Engine):
 
         return inst_ids
 
-    def _update_instance_count(self, stack, cluster, target_count):
+    def _update_instance_count(self, stack, cluster, target_count,
+                               instances_to_delete=None):
         ctx = context.ctx()
+        instances_name_to_delete = {}
+        if instances_to_delete:
+            for instance in instances_to_delete:
+                node_group_id = instance['node_group']['id']
+                if node_group_id not in instances_name_to_delete:
+                    instances_name_to_delete[node_group_id] = []
+                instances_name_to_delete[node_group_id].append(
+                    instance['instance_name'])
+
         for node_group in cluster.node_groups:
             count = target_count[node_group.id]
-            stack.add_node_group_extra(node_group.id, count,
-                                       self._generate_user_data_script)
+            stack.add_node_group_extra(
+                node_group.id, count, self._generate_user_data_script,
+                instances_name_to_delete.get(node_group.id, None))
 
-            # if number of instances decreases, we need to drop
-            # the excessive ones
-            for i in range(count, node_group.count):
-                conductor.instance_remove(ctx, node_group.instances[i])
+            for inst in node_group.instances:
+                if (instances_to_delete and
+                        node_group.id in instances_name_to_delete):
+                    if (inst.instance_name in
+                            instances_name_to_delete[node_group.id]):
+                        conductor.instance_remove(ctx, inst)

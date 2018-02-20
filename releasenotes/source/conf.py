@@ -15,9 +15,15 @@
 # Sahara Release Notes documentation build configuration file
 
 extensions = [
-    'oslosphinx',
     'reno.sphinxext',
+    'openstackdocstheme'
 ]
+
+# openstackdocstheme options
+repository_name = 'openstack/sahara'
+bug_project = 'sahara'
+bug_tag = 'releasenotes'
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -32,16 +38,12 @@ master_doc = 'index'
 project = u'Sahara Release Notes'
 copyright = u'2015, Sahara Developers'
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-#
-# The short X.Y version.
-from sahara.version import version_info as sahara_version
+# Release do not need a version number in the title, they
+# cover multiple versions.
 # The full version, including alpha/beta/rc tags.
-release = sahara_version.version_string_with_vcs()
+release = ''
 # The short X.Y version.
-version = sahara_version.canonical_version_string()
+version = ''
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -55,7 +57,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'openstackdocs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

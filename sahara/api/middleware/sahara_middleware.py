@@ -28,25 +28,12 @@ from sahara.utils import api as api_utils
 CONF = cfg.CONF
 
 
-def build_app(version_response=None):
+def build_app():
     """App builder (wsgi).
 
     Entry point for Sahara REST API server
     """
     app = flask.Flask('sahara.api')
-
-    version_response = (version_response or
-                        {
-                            "versions": [
-                                {"id": "v1.0", "status": "SUPPORTED"},
-                                {"id": "v1.1", "status": "CURRENT"}
-                            ]
-                        })
-
-    @app.route('/', methods=['GET'])
-    def version_list():
-        context.set_ctx(None)
-        return api_utils.render(version_response)
 
     @app.teardown_request
     def teardown_request(_ex=None):
@@ -56,16 +43,19 @@ def build_app(version_response=None):
     app.register_blueprint(api_v10.rest, url_prefix='/v1.1')
     app.register_blueprint(api_v11.rest, url_prefix='/v1.1')
 
-    def make_json_error(ex):
-        status_code = (ex.code
-                       if isinstance(ex, werkzeug_exceptions.HTTPException)
-                       else 500)
-        description = (ex.description
-                       if isinstance(ex, werkzeug_exceptions.HTTPException)
-                       else str(ex))
-        return api_utils.render({'error': status_code,
-                                 'error_message': description},
-                                status=status_code)
+    class _JSONErrorHandler(dict):
+        def __getitem__(self, ex):
+            status_code = (ex.code
+                           if isinstance(ex, werkzeug_exceptions.HTTPException)
+                           else 500)
+            description = (ex.description
+                           if isinstance(ex, werkzeug_exceptions.HTTPException)
+                           else str(ex))
+            return api_utils.render({'error': status_code,
+                                     'error_message': description},
+                                    status=status_code)
+
+    make_json_error = _JSONErrorHandler()
 
     for code in six.iterkeys(werkzeug_exceptions.default_exceptions):
         app.error_handler_spec[None][code] = make_json_error
@@ -78,14 +68,7 @@ def build_v2_app():
 
     Entry point for Experimental V2 Sahara REST API server
     """
-    version_response = {
-        "versions": [
-            {"id": "v1.0", "status": "SUPPORTED"},
-            {"id": "v1.1", "status": "CURRENT"},
-            {"id": "v2", "status": "EXPERIMENTAL"}
-        ]
-    }
-    app = build_app(version_response)
+    app = build_app()
 
     api_v2.register_blueprints(app, url_prefix='/v2')
 

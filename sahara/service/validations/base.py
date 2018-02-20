@@ -17,6 +17,7 @@ import collections
 
 import novaclient.exceptions as nova_ex
 from oslo_config import cfg
+from oslo_utils import uuidutils
 import six
 
 from sahara import conductor as cond
@@ -165,7 +166,7 @@ def check_node_group_basic_fields(plugin_name, hadoop_version, ng,
                 _("You must specify a volumes_size parameter"))
 
     if ng.get('floating_ip_pool'):
-        check_floatingip_pool_exists(ng['name'], ng['floating_ip_pool'])
+        check_floatingip_pool_exists(ng['floating_ip_pool'])
 
     if ng.get('security_groups'):
         check_security_groups_exist(ng['security_groups'])
@@ -194,17 +195,9 @@ def check_security_groups_exist(security_groups):
                 sg, _("Security group '%s' not found"))
 
 
-def check_floatingip_pool_exists(ng_name, pool_id):
+def check_floatingip_pool_exists(pool_id):
     network = None
-    if CONF.use_neutron:
-        network = neutron.get_network(pool_id)
-    else:
-        # tmckay-fp, whoa, this suggests that we allow floating_ip_pools with
-        # nova?  Can that be true? Scour for this
-        for net in nova.client().floating_ip_pools.list():
-            if net.name == pool_id:
-                network = net.name
-                break
+    network = neutron.get_network(pool_id)
 
     if not network:
         raise ex.NotFoundException(pool_id, _("Floating IP pool %s not found"))
@@ -361,15 +354,59 @@ def _get_floating_ip_pool(node_group):
 # Cluster scaling
 
 def check_resize(cluster, r_node_groups):
-    cluster_ng_names = [ng.name for ng in cluster.node_groups]
+    ng_map = {}
+    for ng in cluster.node_groups:
+        ng_map[ng.name] = ng
 
     check_duplicates_node_groups_names(r_node_groups)
 
     for ng in r_node_groups:
-        if ng['name'] not in cluster_ng_names:
+        if ng['name'] not in ng_map.keys():
             raise ex.InvalidReferenceException(
                 _("Cluster doesn't contain node group with name '%s'")
                 % ng['name'])
+        node_group = ng_map[ng['name']]
+        if node_group.get('node_group_template_id'):
+            ng_tmpl_id = node_group['node_group_template_id']
+            check_node_group_template_exists(ng_tmpl_id)
+            ng_tmp = api.get_node_group_template(ng_tmpl_id).to_wrapped_dict()
+            check_node_group_basic_fields(cluster.plugin_name,
+                                          cluster.hadoop_version,
+                                          ng_tmp['node_group_template'])
+
+    for scaling_ng in r_node_groups:
+        current_count = ng_map[scaling_ng['name']].count
+        new_count = scaling_ng['count']
+        count_diff = current_count - new_count
+        if 'instances' in scaling_ng:
+            if len(scaling_ng['instances']) > count_diff:
+                raise ex.InvalidDataException(
+                    _("Number of specific instances (%(instance)s) to"
+                      " delete can not be greater than the count difference"
+                      " (%(count)s during scaling")
+                    % {'instance': str(len(scaling_ng['instances'])),
+                       'count': str(count_diff)})
+            else:
+                if len(scaling_ng['instances']) > 0:
+                    is_uuid = uuidutils.is_uuid_like(
+                        scaling_ng['instances'][0])
+                    if is_uuid:
+                        for instance in scaling_ng['instances']:
+                            if not uuidutils.is_uuid_like(instance):
+                                raise ex.InvalidReferenceException(
+                                    _("You can only reference instances by"
+                                      " Name or UUID, not both on the same"
+                                      " request"))
+                    else:
+                        for instance in scaling_ng['instances']:
+                            if uuidutils.is_uuid_like(instance):
+                                raise ex.InvalidReferenceException(
+                                    _("You can only reference instances by"
+                                      " Name or UUID, not both on the same"
+                                      " request"))
+                    _check_duplicates(scaling_ng['instances'],
+                                      _("Duplicate entry for instances to"
+                                        " delete"))
 
 
 def check_add_node_groups(cluster, add_node_groups):

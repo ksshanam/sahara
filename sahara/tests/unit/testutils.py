@@ -23,21 +23,29 @@ def create_cluster(name, tenant, plugin, version, node_groups, **kwargs):
     dct = {'id': uuidutils.generate_uuid(), 'name': name,
            'tenant_id': tenant, 'plugin_name': plugin,
            'hadoop_version': version, 'node_groups': node_groups,
-           'cluster_configs': {}, "sahara_info": {}, 'is_protected': False}
+           'cluster_configs': {}, "sahara_info": {},
+           'user_keypair_id': None, 'default_image_id': None,
+           'is_protected': False}
     dct.update(kwargs)
     return r.ClusterResource(dct)
 
 
-def make_ng_dict(name, flavor, processes, count, instances=None, **kwargs):
+def make_ng_dict(name, flavor, processes, count, instances=None,
+                 volumes_size=None, node_configs=None, resource=False,
+                 **kwargs):
+    node_configs = node_configs or {}
     instances = instances or []
     dct = {'id': uuidutils.generate_uuid(), 'name': name,
-           'flavor_id': flavor, 'node_processes': processes,
-           'count': count, 'instances': instances, 'node_configs': {},
+           'volumes_size': volumes_size, 'flavor_id': flavor,
+           'node_processes': processes, 'count': count,
+           'instances': instances, 'node_configs': node_configs,
            'security_groups': None, 'auto_security_group': False,
            'availability_zone': None, 'volumes_availability_zone': None,
            'open_ports': [], 'is_proxy_gateway': False,
            'volume_local_to_instance': False}
     dct.update(kwargs)
+    if resource:
+        return r.NodeGroupTemplateResource(dct)
     return dct
 
 
